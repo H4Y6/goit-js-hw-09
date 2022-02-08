@@ -9,32 +9,42 @@ const options = {
   minuteIncrement: 1,
   onClose,
 };
-
-let targetDate = 1970;
+let intervalId;
+let targetDate;
 const btnRef = document.querySelector("button[data-start]");
 btnRef.disabled = true;
 flatpickr("#datetime-picker", options);
 
 function onClose(selectedDates) {
-    targetDate = selectedDates[0];
-  if (targetDate < Date.now()) {
-    return Notify.warning("Please choose a date in the future");
-  } else {
-    btnRef.disabled = false;
-    return Notify.success(`${selectedDates}[0]`);
-  }
-};
+  const currentTime = new Date();
+  const rawSelectedDate = selectedDates[0];
 
-btnRef.addEventListener("click", () => {
-  if (targetDate < Date.now()) {
-  return;
-} else {
-    let intervalId = setInterval(() => {
-    const timeToEnd = convertMs(targetDate - Date.now());
+  if (rawSelectedDate < currentTime) {
+    return Notify.failure('Please choose a date in the future');
+  } else {
+    targetDate = rawSelectedDate;
+  }
+  btnRef.disabled = false;
+  return Notify.success(`${selectedDates}[0]`);
+}
+
+btnRef.addEventListener('click', () => {
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+
+  intervalId = setInterval(() => {
+    const currentTime = new Date();
+
+    if (targetDate <= currentTime) {
+      clearInterval(intervalId);
+      return;
+    }
+
+    const timeToEnd = convertMs(targetDate - currentTime);
     const timeToEndToString = addLeadingZero(timeToEnd);
     renderTime(timeToEndToString);
   }, 1000);
-};
 });
 
 function renderTime({ days, hours, minutes, seconds }) {
